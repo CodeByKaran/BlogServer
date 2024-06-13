@@ -17,7 +17,7 @@ import bcrypt from "bcryptjs"
 
 
 const options={
-  httpOnl:true,
+  httpOnly:true,
   secured:true
 }
 
@@ -421,8 +421,12 @@ const getCurrentUser=async(req,res)=>{
       .send(new ApiError(404,"Session has expired"))
     }
      
+     const {accessToken,refreshToken} = await genRefreshAndAccessToken(user._id)
+     
     return res
     .status(200)
+     .cookie("accessToken",accessToken,options)
+    .cookie("refreshToken",refreshToken,options)
     .json(
       new ApiResponse(200,user,"user fetched successfully")
     )

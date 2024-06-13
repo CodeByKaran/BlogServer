@@ -250,141 +250,125 @@ const getSingleBlog = async(req,res)=>{
    }
 }
 
-const getBlog=AsyncHandler(async(req,res)=>{
- 
- const blog = await Blog.aggregate([
-    {
-      $match:{}
-   },
-    {
-          $lookup:{
-             from:"followers",
-             localField:"owner",
-             foreignField:"followedto",
-             as:"followers"
-          }
-       },
-    {
-         $lookup:{
-            from:"users",
-            foreignField:"_id",
-            localField:"owner",
-            as:"userByBlog",
-         }  
-       },
-    {
-          $addFields:{
-             userByBlog:{
-                $first:"$userByBlog"
-             },
-             isFollowed:{
-               $cond:{
-                  if:{$in:[req.user?._id,"$followers.followedby"]},
-                  then:true,
-                  else:false
-               }
-             },
-             followers:{
-                $size:"$followers"
-             }
-          }
-       },
-    {
-         $project:{
-            fullname:"$userByBlog.fullname",
-            avatar:"$userByBlog.avatar",
-            username:"$userByBlog.username",
-            tagline:"$userByBlog.tagline",
-            contentimg:1,
-            content:1,
-            followers:1,
-            isFollowed:1
-         } 
-       },
-    {
-           $lookup:{
-              from:"comments",
-              localField:"_id",
-              foreignField:"commentto",
-              as:"comments",
-              pipeline:[
-                {
-                   $lookup:{
-                      from:"users",
-                      localField:"commentby",
-                      foreignField:"_id",
-                      as:"user"
-                   }
-                },
-                {
-                   $addFields:{
-                      user:{
-                        $first:"$user"
-                      }
-                   }
-                },
-                {
-                   $project:{
-                     username:"$user.username",
-                     fullname:"$user.fullname",
-                     content:1,
-                  avatar:"$user.avatar",
-                  editable:{
-                     $eq:[req.user._id,"$user._id"]
-                  }
-                 }
-                },
-            ]
-           }
+
+const getBlog = AsyncHandler(async (req, res) => {
+    const page = parseInt(req.query.page, 10) || 1;
+    const pageSize = parseInt(req.query.pageSize, 10) || 10;
+    const skip = (page - 1) * pageSize;
+    
+    console.log(page,pageSize,skip);
+
+    const blog = await Blog.aggregate([
+        {
+            $match: {
+            }
         },
-    {
-          $lookup:{
-             from:"likes",
-             localField:"_id",
-             foreignField:"likedto",
-             as:"likes",
-             pipeline:[
-               {
-                  $group:{
-                     _id:"$likes",
-                     totallike:{
-                        $count:{}
-                     }
-                  }
-               },
-               {
-                  $project:{
-                     _id: 0,
-                     totallike:1
-                  }
-               }
-            ]
-          },
+        {
+            $lookup: {
+                from: "followers",
+                localField: "owner",
+                foreignField: "followedto",
+                as: "followers"
+            }
         },
-    {
-           $addFields:{
-              likes:{
-                 $first:"$likes.totallike"
-              },
-              toalComments:{
-                 $size:"$comments"
-              }
-           }
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "userByBlog",
+            }
         },
-   ])
-  
-  const totalBlog = blog.length;
-  
- const {pageSize,page,startIndex,endIndex} = req.pagination;
- 
- const slice = blog.slice(startIndex,endIndex)
- 
-  return res
-  .status(200)
-  .json(
-     new ApiResponse(200,{page,pageSize,totalBlog,slice},"blog fetched")
-   )
-})
+        {
+            $addFields: {
+                userByBlog: { $first: "$userByBlog" },
+                isFollowed: {
+                    $cond: {
+                        if: { $in: [req.user?._id, "$followers.followedby"] },
+                        then: true,
+                        else: false
+                    }
+                },
+                followers: { $size: "$followers" }
+            }
+        },
+        {
+            $project: {
+                fullname: "$userByBlog.fullname",
+                avatar: "$userByBlog.avatar",
+                username: "$userByBlog.username",
+                tagline: "$userByBlog.tagline",
+                contentimg: 1,
+                content: 1,
+                followers: 1,
+                isFollowed: 1,
+                createdAt: 1,
+                updatedAt: 1
+            }
+        },
+        {
+            $lookup: {
+                from: "comments",
+                localField: "_id",
+                foreignField: "commentto",
+                as: "comments",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "commentby",
+                            foreignField: "_id",
+                            as: "user"
+                        }
+                    },
+                    {
+                        $addFields: {
+                            user: { $first: "$user" },
+                            editable: { $eq: [req.user?._id, "$user._id"] }
+                        }
+                    },
+                    {
+                        $project: {
+                            username: "$user.username",
+                            fullname: "$user.fullname",
+                            content: 1,
+                            avatar: "$user.avatar",
+                            editable: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $lookup: {
+                from: "likes",
+                localField: "_id",
+                foreignField: "likedto",
+                as: "likes",
+            }
+        },
+        {
+            $addFields: {
+                totallikes: { $size: "$likes" },
+                totalComments: { $size: "$comments" }
+            }
+        },
+        {
+            $skip: skip
+        },
+        {
+            $limit: pageSize
+        }
+    ]);
+
+    const totalBlog = await Blog.countDocuments({}); 
+
+    return res.status(200).json(
+        new ApiResponse(200, { page, pageSize, totalBlog, blogs: blog }, "Blog fetched")
+    );
+});
+
+
 
 export {
    uploadBlog,

@@ -10,14 +10,14 @@ export const authUser=async(req,res,next)=>{
      
      if(!token){
         return res.status(500)
-        .send(new ApiError(500,"token not found"))
+        .send(new ApiError(409,"token expired!"))
      }
      
      const decodedToken = await jwt.verify(token,process.env.REF_TOKEN_SECRET)
      
      if(!decodedToken){
         return res.status(500)
-        .send(new ApiError(500,"please try again after some time"))
+        .send(new ApiError(500,"invaild token!"))
      }
      
      const user = await User.findById(decodedToken._id)
