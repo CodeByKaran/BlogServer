@@ -79,6 +79,7 @@ import LikeRouter from "./routes/Like.routes.js"
 import CommentRouter from "./routes/Comment.routes.js"
 import FollowerRouter from "./routes/Follower.routes.js"
 import GoogleRouter from "./routes/Google.routes.js"
+import SaveRouter from "./routes/Save.routes.js"
 
 
 app.use("/api/v1/user",UserRouter)
@@ -87,6 +88,7 @@ app.use("/api/v1/like",LikeRouter)
 app.use("/api/v1/comment",CommentRouter)
 app.use("/api/v1/follow/user",FollowerRouter)
 app.use("/auth",GoogleRouter)
+app.use("/api/v1/save",SaveRouter)
 
 
 export default app

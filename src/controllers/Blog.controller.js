@@ -1,6 +1,7 @@
 import {Blog} from "../models/Blog.model.js"
 import {Follower} from "../models/Follower.model.js"
 import {User} from "../models/User.model.js"
+import {Save} from "../models/Save.model.js"
 import {AsyncHandler} from "../utils/AsyncHandler.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {ApiError} from "../utils/ApiError.js"
@@ -26,8 +27,16 @@ const uploadBlog = async(req,res)=>{
       )
    }
    
-   const {content} = req.body
+   const {content,tags} = req.body
    const con_image = req.file?.path
+   
+   if(!content){
+      return res
+      .status(402)
+      .json(
+         new ApiError(402,"caption is requiured !")
+       )
+   }
    
    if(!con_image){
       return res
@@ -50,6 +59,7 @@ const uploadBlog = async(req,res)=>{
    const blog = await Blog.create({
       owner : user._id,
       content : content ,
+      tags: tags,
       contentimg : contentimg.secure_url
    })
    
@@ -256,7 +266,6 @@ const getBlog = AsyncHandler(async (req, res) => {
     const pageSize = parseInt(req.query.pageSize, 10) || 10;
     const skip = (page - 1) * pageSize;
     
-    console.log(page,pageSize,skip);
 
     const blog = await Blog.aggregate([
         {
@@ -303,7 +312,8 @@ const getBlog = AsyncHandler(async (req, res) => {
                 followers: 1,
                 isFollowed: 1,
                 createdAt: 1,
-                updatedAt: 1
+                updatedAt: 1,
+                owner:1
             }
         },
         {
@@ -340,6 +350,30 @@ const getBlog = AsyncHandler(async (req, res) => {
             }
         },
         {
+         $lookup:{
+            from : "saves",
+            localField: "_id",
+            foreignField: "blogid",
+            as: "saves"
+         }
+        },
+        {
+           $addFields:{
+              isSaved:{
+                 $cond:{
+                    if:{
+                       $in:[req.user?._id,"$saves.usersaved"]
+                    },
+                    then: true,
+                    else: false
+                 }
+              },
+                saves: {
+                 $size: "$saves"
+              }
+           }
+        },
+        {
             $lookup: {
                 from: "likes",
                 localField: "_id",
@@ -349,8 +383,17 @@ const getBlog = AsyncHandler(async (req, res) => {
         },
         {
             $addFields: {
-                totallikes: { $size: "$likes" },
-                totalComments: { $size: "$comments" }
+                likes: { $size: "$likes" },
+                comments: { $size: "$comments" },
+                isLiked:{
+                   $cond:{
+                      if:{
+                         $in:[req.user?._id,"$likes.likedby"]
+                      },
+                      then:true,
+                      else:false
+                   }
+                }
             }
         },
         {

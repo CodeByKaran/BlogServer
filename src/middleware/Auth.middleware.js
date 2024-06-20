@@ -10,7 +10,7 @@ export const authUser=async(req,res,next)=>{
      
      if(!token){
         return res.status(500)
-        .send(new ApiError(409,"token expired!"))
+        .send(new ApiError(409,"User Must Be Logged In"))
      }
      
      const decodedToken = await jwt.verify(token,process.env.REF_TOKEN_SECRET)

@@ -1,11 +1,12 @@
 import {Router} from "express"
-import {authUser} from "../middleware/Auth.middleware.js"
+import {authUser,simpleAuth} from "../middleware/Auth.middleware.js"
 import {upload} from "../middleware/Multer.middleware.js"
 
 import {
    commentOnBlog,
    deleteComment,
-   editComment
+   editComment,
+   getComments
 } from "../controllers/Comment.controller.js"
 
 
@@ -17,5 +18,7 @@ router.route("/to/:blogId").post(authUser,commentOnBlog)
 router.route("/delete/:commentId").delete(authUser,deleteComment)
 
 router.route("/edit/:commentId").put(authUser,editComment)
+
+router.route("/get/:blogId").get(simpleAuth,getComments)
 
 export default router

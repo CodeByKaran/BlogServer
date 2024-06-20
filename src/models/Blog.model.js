@@ -13,6 +13,10 @@ const BlogSchema = new Schema(
        type:String,
        trim:true,
     },
+    tags:{
+       type: Array,
+       default: []
+    }
    },
    {
   timestamps:true 
