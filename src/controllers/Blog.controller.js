@@ -118,124 +118,125 @@ const getSingleBlog = async(req,res)=>{
      const {id} = req.params
      
      const blog = await Blog.aggregate([
-       {
-           $match: {
-              _id: new mongoose.Types.ObjectId(id)
-           }
-        },
-       {
-          $lookup:{
-             from:"followers",
-             localField:"owner",
-             foreignField:"followedto",
-             as:"followers"
-          }
-       },
-       {
-         $lookup:{
-            from:"users",
-            foreignField:"_id",
-            localField:"owner",
-            as:"userByBlog",
-         }  
-       },
-       {
-          $addFields:{
-             userByBlog:{
-                $first:"$userByBlog"
-             },
-             isFollowed:{
-               $cond:{
-                  if:{$in:[req.user._id,"$followers.followedby"]},
-                  then:true,
-                  else:false
-               }
-             },
-             followers:{
-                $size:"$followers"
-             }
-          }
-       },
-       {
-         $project:{
-            fullname:"$userByBlog.fullname",
-            avatar:"$userByBlog.avatar",
-            username:"$userByBlog.username",
-            tagline:"$userByBlog.tagline",
-            contentimg:1,
-            content:1,
-            followers:1,
-            isFollowed:1
-         } 
-       },
-       {
-           $lookup:{
-              from:"comments",
-              localField:"_id",
-              foreignField:"commentto",
-              as:"comments",
-              pipeline:[
+    {
+        $lookup: {
+            from: "followers",
+            localField: "owner",
+            foreignField: "followedto",
+            as: "followers"
+        }
+    },
+    {
+        $lookup: {
+            from: "users",
+            localField: "owner",
+            foreignField: "_id",
+            as: "userByBlog"
+        }
+    },
+    {
+        $addFields: {
+            userByBlog: { $arrayElemAt: ["$userByBlog", 0] },
+            isFollowed: {
+                $cond: {
+                    if: { $in: [req.user?._id, "$followers.followedby"] },
+                    then: true,
+                    else: false
+                }
+            },
+            followersCount: { $size: "$followers" }
+        }
+    },
+    {
+        $project: {
+            fullname: "$userByBlog.fullname",
+            avatar: "$userByBlog.avatar",
+            username: "$userByBlog.username",
+            tagline: "$userByBlog.tagline",
+            contentimg: 1,
+            content: 1,
+            followersCount: 1,
+            isFollowed: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            owner: 1
+        }
+    },
+    {
+        $lookup: {
+            from: "comments",
+            let: { blogId: "$_id" },
+            pipeline: [
+                { $match: { $expr: { $eq: ["$commentto", "$$blogId"] } } },
                 {
-                   $lookup:{
-                      from:"users",
-                      localField:"commentby",
-                      foreignField:"_id",
-                      as:"user"
-                   }
+                    $lookup: {
+                        from: "users",
+                        localField: "commentby",
+                        foreignField: "_id",
+                        as: "user"
+                    }
                 },
                 {
-                   $addFields:{
-                      user:{
-                        $first:"$user"
-                      }
-                   }
+                    $addFields: {
+                        user: { $arrayElemAt: ["$user", 0] },
+                        editable: { $eq: [req.user?._id, "$commentby"] }
+                    }
                 },
                 {
-                   $project:{
-                     username:"$user.username",
-                     fullname:"$user.fullname",
-                     content:1,
-                  avatar:"$user.avatar"
-                   }
-                },
-            ]
-           }
-        },
-       {
-          $lookup:{
-             from:"likes",
-             localField:"_id",
-             foreignField:"likedto",
-             as:"likes",
-             pipeline:[
-               {
-                  $group:{
-                     _id:"$likes",
-                     totallike:{
-                        $count:{}
-                     }
-                  }
-               },
-               {
-                  $project:{
-                     _id: 0,
-                     totallike:1
-                  }
-               }
-            ]
-          },
-        },
-       {
-           $addFields:{
-              likes:{
-                 $first:"$likes.totallike"
-              },
-              toalComments:{
-                 $size:"$comments"
-              }
-           }
-        },
-      ])
+                    $project: {
+                        username: "$user.username",
+                        fullname: "$user.fullname",
+                        content: 1,
+                        avatar: "$user.avatar",
+                        editable: 1
+                    }
+                }
+            ],
+            as: "comments"
+        }
+    },
+    {
+        $lookup: {
+            from: "saves",
+            localField: "_id",
+            foreignField: "blogid",
+            as: "saves"
+        }
+    },
+    {
+        $addFields: {
+            isSaved: {
+                $cond: {
+                    if: { $in: [req.user?._id, "$saves.usersaved"] },
+                    then: true,
+                    else: false
+                }
+            },
+            saves: { $size: "$saves" }
+        }
+    },
+    {
+        $lookup: {
+            from: "likes",
+            localField: "_id",
+            foreignField: "likedto",
+            as: "likes"
+        }
+    },
+    {
+        $addFields: {
+            likes: { $size: "$likes" },
+            commentsCount: { $size: "$comments" },
+            isLiked: {
+                $cond: {
+                    if: { $in: [req.user?._id, "$likes.likedby"] },
+                    then: true,
+                    else: false
+                }
+            }
+        }
+    }
+]);
      
      if(!blog.length){
         return res
