@@ -8,6 +8,7 @@ export const authUser=async(req,res,next)=>{
    try {
      const token = req.cookies?.refreshToken|| req.header('Authorization')?.replace("Bearer ","")
      
+     
      if(!token){
         return res.status(500)
         .send(new ApiError(409,"User Must Be Logged In"))

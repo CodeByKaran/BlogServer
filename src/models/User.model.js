@@ -29,9 +29,13 @@ const UserSchema = new Schema({
    password:{
       type:String
    },
-   tagline:{
+   tags:{
+      type:Array,
+      default:["cool"]
+   },
+   bio:{
       type:String,
-      default:'cool'
+      default:"Hello , Make Sure You Follow Me"
    },
    isverify:{
       type:Boolean,

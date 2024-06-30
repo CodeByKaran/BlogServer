@@ -104,7 +104,7 @@ const editComment=AsyncHandler(async(req,res)=>{
 const getComments = AsyncHandler(async (req, res) => {
     const { blogId } = req.params;
     const page = parseInt(req.query.page, 10) || 1;
-    const pageSize = parseInt(req.query.pageSize, 10) || 3;
+    const pageSize = parseInt(req.query.pagesize, 10) || 3;
     const skip = (page - 1) * pageSize;
     
     
@@ -145,6 +145,21 @@ const getComments = AsyncHandler(async (req, res) => {
               totallikes : 1,
               createdAt: 1,
               updatedAt: 1
+           }
+        },
+        {
+           $lookup:{
+              from:"followers",
+              localField:"commentby",
+              foreignField:"followedto",
+              as: "totalFollowers"
+           }
+        },
+        {
+           $addFields:{
+              totalFollowers:{
+                 $size:"$totalFollowers"
+              }
            }
         },
         {

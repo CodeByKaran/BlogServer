@@ -11,16 +11,17 @@ import {
      changePassword,
      logOut,
      getCurrentUser,
-     deleteUser
+     deleteUser,
+     getUserById
 } from "../controllers/User.controller.js"
-import {authUser} from "../middleware/Auth.middleware.js"
+import {authUser,simpleAuth} from "../middleware/Auth.middleware.js"
 import {upload} from "../middleware/Multer.middleware.js"
 
 
 const router = Router()
 
 
-router.route("/sign-up").post(signUp)
+router.route("/sign-up").post(upload.single('avatar'),signUp)
 router.route("/verify/:id").post(verifyUser)
 
 
@@ -42,6 +43,7 @@ router.route("/log-out").get(authUser,logOut)
 router.route("/refresh-otp/:id").post(refreshOtp)
 
 router.route("/fetch").get(authUser,getCurrentUser)
+router.route("/get/user").get(simpleAuth,getUserById)
 
 
 //delete User

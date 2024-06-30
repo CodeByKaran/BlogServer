@@ -5,7 +5,9 @@ import {
    uploadBlog,
    deletBlog,
    getSingleBlog,
-   getBlog
+   getBlog,
+   getBlogOfUser,
+   getBlogContentOfUser
 } from "../controllers/Blog.controller.js"
 
 import {authUser,simpleAuth} from "../middleware/Auth.middleware.js"
@@ -24,9 +26,13 @@ router.route("/create").post(
 
 router.route("/delete/:id").post(authUser,deletBlog)
 
-router.route("/fetch/one/:id").get(authUser,getSingleBlog)
+router.route("/fetch/one/:id").get(simpleAuth,getSingleBlog)
 
 router.route("/fetch/all").get(simpleAuth,paginationMiddleware,getBlog)
+router.route("/fetch/by/user").get(simpleAuth,getBlogOfUser)
+router.route("/fetch/content").get(simpleAuth,getBlogContentOfUser)
+
+
 
 
 export default router
