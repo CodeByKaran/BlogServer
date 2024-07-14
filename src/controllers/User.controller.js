@@ -17,11 +17,11 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
 const options = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'Strict',
-      maxAge: 1000 * 60 * 60 * 24 * 7
-    };
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "Strict",
+  maxAge: 1000 * 60 * 60 * 24 * 7
+};
 
 const genRefreshAndAccessToken = async userId => {
   try {
@@ -43,24 +43,35 @@ const genRefreshAndAccessToken = async userId => {
 
 const signUp = async (req, res) => {
   try {
-    const { email, username, password, fullname,bio,tags } = req.body;
-
-    if (!email || !username || !password || !fullname || !bio) {
-      return res.status(402).send(new ApiError(402, "fields Are required"));
+    const { email, username, password, fullname, bio, tags } = req.body;
+    const avatar = req.file?.path;
+     
+    if (
+      !email ||
+      !username ||
+      !password ||
+      !fullname ||
+      !bio ||
+      !tags ||
+      !avatar
+    ) {
+      return res
+        .status(402)
+        .send(new ApiError(402, "all input fields Are required"));
     }
     
-    const avatar = req.file?.path;
+    const lowerCaseEmail = email.toLowerCase()
+    const isUserAlready = await User.findOne({ email:lowerCaseEmail });
+    
 
-    const isUserAlready = await User.find({ email });
-
-    if (isUserAlready.length) {
+    if (isUserAlready) {
       return res
         .status(402)
         .send(new ApiError(409, "User is already registered"));
     }
 
     const avatarURI = await uploadImage(avatar);
-    
+
     const otp = generateOtp();
 
     const expirytime = Date.now() + 1000 * 60 * 10;
@@ -91,7 +102,7 @@ const signUp = async (req, res) => {
 
     return res
       .status(200)
-      .json(new ApiResponse(200, signedUpuser, "user SignUp Succesfuly"));
+      .json(new ApiResponse(200, signedUpuser._id, "user SignUp Succesfuly"));
   } catch (err) {
     return res.status(500).send(new ApiError(500, err.message));
   }
@@ -103,39 +114,43 @@ const verifyUser = async (req, res) => {
     const { id } = req.params;
     const { userOTP } = req.body;
 
-    const user = await User.findById(id).select(
-      "-password -refreshtoken -otp -accesstoken"
-    );
+    if (!id || !userOTP) {
+      return res.status(400).json(new ApiError(400, "ID or OTP not found"));
+    }
+
+    const user = await User.findById(id);
 
     if (!user) {
-      return res.status(402).send(new ApiError(409, "Id is not defined"));
+      return res.status(404).json(new ApiError(404, "User not found"));
     }
 
     if (user.isverify) {
-      return res.status(404).send("user is alerady verified");
+      return res
+        .status(400)
+        .json(new ApiError(400, "User is already verified"));
+    }
+
+    if (user.otp !== userOTP) {
+      return res.status(400).json(new ApiError(400, "Wrong OTP"));
     }
 
     const isOtpValid = user.expirytime > Date.now();
 
     if (!isOtpValid) {
-      return res.status(404).send(new ApiError(404, "Otp is Expired"));
+      return res.status(400).json(new ApiError(400, "OTP is expired"));
     }
 
-    if (user.otp != userOTP) {
-      return res.status(402).send(new ApiError(402, "Wrong Otp"));
-    }
-
-    const acko = await user.updateOne({
-      otp: null,
+    await user.updateOne({
+      otp: 1,
       expirytime: null,
       isverify: true
     });
 
     return res
       .status(200)
-      .json(new ApiResponse(200, user, "successfully verifed"));
+      .json(new ApiResponse(200, user, "Successfully verified"));
   } catch (err) {
-    return res.status(500).send(new ApiError(500, err.message));
+    return res.status(500).json(new ApiError(500, err.message));
   }
 };
 
@@ -455,7 +470,7 @@ const getUserById = AsyncHandler(async (req, res) => {
         isFollowed: 1,
         tags: 1,
         bio: 1,
-        tagline:1
+        tagline: 1
       }
     }
   ]);

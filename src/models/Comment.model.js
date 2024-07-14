@@ -16,10 +16,6 @@ const CommentSchema = new Schema(
          required:true,
          trim:true
       },
-      totallikes:{
-         type:Array,
-         default:[]
-      }
    },
    {
       timestamps:true

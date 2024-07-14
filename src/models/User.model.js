@@ -9,6 +9,7 @@ const UserSchema = new Schema({
       trim:true,
       lowerCase:true,
       required:true,
+      unique:true
    },
    fullname:{
       type:String,
@@ -18,7 +19,8 @@ const UserSchema = new Schema({
    email:{
       type:String,
       unique:true,
-      required:true
+      required:true,
+      lowerCase:true
    },
    avatar:{
       type:String,
@@ -98,6 +100,10 @@ UserSchema.methods.genAccessToken=function(){
    )
 }
 
+UserSchema.pre('save', function (next) {
+  this.email = this.email.toLowerCase();
+  next();
+});
 
 
 export const User = mongoose.model("User",UserSchema)

@@ -1,5 +1,6 @@
 import {v2 as Cloudinary} from "cloudinary"
-import fs from "fs"
+import fs from "fs";
+
 
 Cloudinary.config({
    cloud_name: process.env.CLOUD_NAME,
@@ -8,18 +9,29 @@ Cloudinary.config({
 })
 
 
-const uploadImage=async(LocalPath)=>{
-   try {
-      const res = await Cloudinary.uploader.upload(LocalPath,{
-       resource_type:"image"
-      })
-      fs.unlinkSync(LocalPath)
-      return res
-   } catch (e) {
-      fs.unlinkSync(LocalPath)
-      return null
-   }
-}
+const uploadImage = async (localPath) => {
+  try {
+    const options = {
+      resource_type: "image",
+      upload_preset: "kkakunsigned" 
+    };
+
+    const res = await Cloudinary.uploader.upload(localPath, options);
+
+    fs.unlink(localPath, (err) => {
+      if (err) console.error(`Error deleting file: ${err}`);
+    });
+    
+    return res;
+  } catch (e) {
+     if (fs.existsSync(localPath)) {
+        fs.unlink(localPath, (err) => {
+          if (err) console.error(`Error deleting file: ${err}`);
+        });
+      }
+    return null;
+  }
+};
 
 
 const deleteImageOnCloudinary=async(publicId)=>{
