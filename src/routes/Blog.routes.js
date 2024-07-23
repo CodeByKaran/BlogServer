@@ -29,7 +29,11 @@ router.route("/delete/:id").post(authUser,deletBlog)
 router.route("/fetch/one/:id").get(simpleAuth,getSingleBlog)
 
 router.route("/fetch/all").get(simpleAuth,paginationMiddleware,getBlog)
+
+
 router.route("/fetch/by/user").get(simpleAuth,getBlogOfUser)
+
+
 router.route("/fetch/content").get(simpleAuth,getBlogContentOfUser)
 
 

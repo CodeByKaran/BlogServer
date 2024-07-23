@@ -144,7 +144,6 @@ const getComments = AsyncHandler(async (req, res) => {
               commentto : 1,
               commentby : 1,
               content: 1,
-              totallikes : 1,
               createdAt: 1,
               updatedAt: 1
            }
