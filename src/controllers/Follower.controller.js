@@ -165,7 +165,7 @@ const getFollowerOfUser=AsyncHandler(async(req,res)=>{
    .json(
      new ApiResponse(200,{
         result:userFollower[0].paginatedResults,
-        totalFollower:userFollower[0].totalFollower,
+        totalResult:userFollower[0].totalFollower,
         page,
         pageSize
      },"Follower List fetched!")
@@ -279,7 +279,7 @@ const getFollowingOfUser=AsyncHandler(async(req,res)=>{
    .json(
      new ApiResponse(200,{
         result:userFollower[0].paginatedResults,
-        totalFollowing:userFollower[0].totalFollower,
+        totalResult:userFollower[0].totalFollower,
         page,
         pageSize
      },"Following List fetched!")

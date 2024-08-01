@@ -334,6 +334,12 @@ const getBlog = AsyncHandler(async (req, res) => {
       }
     },
     {
+      $sort: { 
+         isFollowed: -1,
+         createdAt: -1
+      }
+    },
+    {
       $skip: skip
     },
     {
